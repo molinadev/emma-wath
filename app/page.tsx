@@ -9,6 +9,10 @@ function germanHour(hour: number) {
   return germanNumbers[hour % 12 || 12]
 }
 
+function twentyFourHour(hour: number) {
+  return (hour % 12) + 12
+}
+
 function germanTime(hour: number, minute: number) {
   const next = (hour + 1) % 12 || 12
   if (minute === 0) return `${germanHour(hour)} Uhr`
@@ -128,7 +132,8 @@ export default function Home() {
     }
   }
 
-  const digital = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+  const digital = `${String(twentyFourHour(hour)).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+  const targetDigital = `${String(twentyFourHour(target.hour)).padStart(2, '0')}:${String(target.minute).padStart(2, '0')}`
   const analog = `${String(hour % 12 || 12).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 
   return (
@@ -142,7 +147,7 @@ export default function Home() {
           <div className="answer-column">
             <button className="primary-button" onClick={solve}>Lösen</button>
             <button className="secondary-button" onClick={newTime}>Neue Uhrzeit <span aria-hidden="true">↗</span></button>
-            <div className="target-note">Stelle die Uhr auf<br /><strong>{String(target.hour).padStart(2, '0')}:{String(target.minute).padStart(2, '0')}</strong></div>
+            <div className="target-note">Stelle die Uhr auf<br /><strong>{targetDigital}</strong></div>
           </div>
         </div>
         {solved && <section className="results" aria-live="polite"><p className="results-title">Deine Antwort</p><div className="result-grid"><div><span>Digital (24 Stunden)</span><strong>{digital}</strong></div><div><span>Analog / 12 Stunden</span><strong>{analog}</strong></div><div className="german-result"><span>Auf Deutsch</span><strong>{germanTime(hour, minute)}</strong><button className="audio-button" onClick={speak} aria-label="Uhrzeit anhören">◖))</button></div></div></section>}
