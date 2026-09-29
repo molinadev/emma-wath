@@ -38,8 +38,10 @@ function Clock({ hour, minute, onChange }: { hour: number; minute: number; onCha
     if (angle < 0) angle += 360
     if (hand === 'minute') {
       // The exercise uses five-minute intervals, so the hour hand advances cleanly with the minute hand.
-      const newMinute = (Math.round(angle / 30) * 5) % 60
-      onChange(hour, newMinute)
+      const minuteStep = Math.round(angle / 30) * 5
+      const newMinute = minuteStep % 60
+      const hourOffset = minuteStep === 60 ? 1 : 0
+      onChange(((hour - 1 + hourOffset) % 12) + 1, newMinute)
     } else {
       const newHour = Math.round(angle / 30) % 12 || 12
       onChange(newHour, minute)
