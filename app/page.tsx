@@ -152,7 +152,7 @@ export default function Home() {
         </div>
         {solved && <section className="results" aria-live="polite"><p className="results-title">Deine Antwort</p><div className="result-grid"><div><span>Digital (24 Stunden)</span><strong>{digital}</strong></div><div><span>Analog / 12 Stunden</span><strong>{analog}</strong></div><div className="german-result"><span>Auf Deutsch</span><strong>{germanTime(hour, minute)}</strong><button className="audio-button" onClick={speak} aria-label="Uhrzeit anhören">◖))</button></div></div></section>}
       </section>
-      <p className="footer-note">Bewege → denke → löse → höre</p>
+      <p className="footer-note">Creado por Emma Molina Sanchez (8 años) y Papá</p>
     </main>
   )
 }
