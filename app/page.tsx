@@ -37,7 +37,8 @@ function Clock({ hour, minute, onChange }: { hour: number; minute: number; onCha
     let angle = (Math.atan2(y, x) * 180) / Math.PI + 90
     if (angle < 0) angle += 360
     if (hand === 'minute') {
-      const newMinute = Math.round(angle / 6) % 60
+      // The exercise uses five-minute intervals, so the hour hand advances cleanly with the minute hand.
+      const newMinute = (Math.round(angle / 30) * 5) % 60
       onChange(hour, newMinute)
     } else {
       const newHour = Math.round(angle / 30) % 12 || 12
@@ -79,8 +80,10 @@ function Clock({ hour, minute, onChange }: { hour: number; minute: number; onCha
         return <line key={index} x1={50 + Math.sin(angle) * inner} y1={50 - Math.cos(angle) * inner} x2={50 + Math.sin(angle) * outer} y2={50 - Math.cos(angle) * outer} className={index % 5 === 0 ? 'clock-tick major' : 'clock-tick'} />
       })}
       {numbers.map(({ value, x, y }) => <text key={value} x={x} y={y} className="clock-number">{value}</text>)}
-      <line x1="50" y1="50" x2="50" y2="22" className="minute-hand" transform={`rotate(${minuteAngle} 50 50)`} onPointerDown={handStart('minute')} />
-      <line x1="50" y1="50" x2="50" y2="30" className="hour-hand" transform={`rotate(${hourAngle} 50 50)`} onPointerDown={handStart('hour')} />
+      <line x1="50" y1="54" x2="50" y2="19" className="hand-hit-area" transform={`rotate(${minuteAngle} 50 50)`} onPointerDown={handStart('minute')} />
+      <line x1="50" y1="53" x2="50" y2="29" className="hand-hit-area" transform={`rotate(${hourAngle} 50 50)`} onPointerDown={handStart('hour')} />
+      <line x1="50" y1="50" x2="50" y2="21" className="minute-hand" transform={`rotate(${minuteAngle} 50 50)`} pointerEvents="none" />
+      <line x1="50" y1="50" x2="50" y2="30" className="hour-hand" transform={`rotate(${hourAngle} 50 50)`} pointerEvents="none" />
       <circle cx="50" cy="50" r="3.7" className="center-dot" />
     </svg>
   )
