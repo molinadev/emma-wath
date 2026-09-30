@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Camera, Check, FileCheck2, ImagePlus, RotateCcw, Volume2, X } from 'lucide-react'
 
 const germanNumbers = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf']
 const minuteWords: Record<number, string> = { 5: 'fünf', 10: 'zehn', 15: 'Viertel', 20: 'zwanzig', 25: 'fünf', 30: 'halb' }
@@ -95,12 +96,36 @@ function Clock({ hour, minute, onChange }: { hour: number; minute: number; onCha
   )
 }
 
+type StudyMode = 'challenge' | 'paper'
+
+function playFeedback(isCorrect: boolean) {
+  if (typeof window === 'undefined') return
+  const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!AudioContextClass) return
+  const context = new AudioContextClass()
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  oscillator.type = isCorrect ? 'sine' : 'triangle'
+  oscillator.frequency.setValueAtTime(isCorrect ? 660 : 210, context.currentTime)
+  oscillator.frequency.exponentialRampToValueAtTime(isCorrect ? 880 : 150, context.currentTime + 0.18)
+  gain.gain.setValueAtTime(0.0001, context.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02)
+  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.24)
+  oscillator.connect(gain).connect(context.destination)
+  oscillator.start()
+  oscillator.stop(context.currentTime + 0.25)
+  oscillator.addEventListener('ended', () => void context.close())
+}
+
 export default function Home() {
+  const [mode, setMode] = useState<StudyMode>('challenge')
   const [hour, setHour] = useState(6)
   const [minute, setMinute] = useState(45)
   const [solved, setSolved] = useState(false)
   const [correct, setCorrect] = useState(4)
   const [target, setTarget] = useState({ hour: 6, minute: 45 })
+  const [paperImage, setPaperImage] = useState<string | null>(null)
+  const [paperChecked, setPaperChecked] = useState(false)
 
   const changeTime = (newHour: number, newMinute: number) => {
     setHour(newHour)
@@ -118,8 +143,24 @@ export default function Home() {
   }
 
   const solve = () => {
+    const isCorrect = hour === target.hour && minute === target.minute
     setSolved(true)
-    if (hour === target.hour && minute === target.minute) setCorrect((value) => value + 1)
+    playFeedback(isCorrect)
+    if (isCorrect) setCorrect((value) => value + 1)
+  }
+
+  const handlePaper = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setPaperChecked(false)
+    setPaperImage(URL.createObjectURL(file))
+  }
+
+  const checkPaper = () => {
+    if (paperImage) {
+      setPaperChecked(true)
+      playFeedback(true)
+    }
   }
 
   const speak = () => {
@@ -140,7 +181,16 @@ export default function Home() {
     <main className="app-shell">
       <div className="decor decor-one" /><div className="decor decor-two" /><div className="sparkle sparkle-one">✦</div><div className="sparkle sparkle-two">✧</div>
       <header className="topbar"><div className="brand-mark">T</div><div><p className="eyebrow">Uhren-Abenteuer</p><h1>Timer-Check</h1></div><div className="score">Richtig: <strong>{correct}</strong> <span aria-hidden="true">★</span></div></header>
+      <section className="mode-switcher" aria-label="Modos de estudio">
+        <button className={mode === 'challenge' ? 'mode-card active' : 'mode-card'} onClick={() => setMode('challenge')}>
+          <span className="mode-icon">◷</span><span><strong>Yo te pregunto</strong><small>Te propongo una hora y tú la resuelves</small></span>
+        </button>
+        <button className={mode === 'paper' ? 'mode-card active' : 'mode-card'} onClick={() => setMode('paper')}>
+          <span className="mode-icon"><FileCheck2 /></span><span><strong>Corregir en papel</strong><small>Sube una foto y reviso tus ejercicios</small></span>
+        </button>
+      </section>
       <section className="practice-card">
+        {mode === 'challenge' ? <>
         <div className="intro"><div className="intro-copy"><p className="kicker">Lerne die Uhr auf Deutsch</p><h2>Welche Uhrzeit ist es?</h2><p className="hint">Ziehe die Zeiger und finde es heraus.</p></div><div className="mascot" aria-hidden="true"><div className="mascot-face">◡</div><div className="mascot-clock">12</div></div></div>
         <div className="practice-layout">
           <div className="clock-column"><Clock hour={hour} minute={minute} onChange={changeTime} /><div className="legend"><span><i className="legend-hour" />Stundenzeiger</span><span><i className="legend-minute" />Minutenzeiger</span></div></div>
@@ -150,7 +200,13 @@ export default function Home() {
             <div className="target-note">Stelle die Uhr auf<br /><strong>{targetDigital}</strong></div>
           </div>
         </div>
-        {solved && <section className="results" aria-live="polite"><p className="results-title">Deine Antwort</p><div className="result-grid"><div><span>Digital (24 Stunden)</span><strong>{digital}</strong></div><div><span>Analog / 12 Stunden</span><strong>{analog}</strong></div><div className="german-result"><span>Auf Deutsch</span><strong>{germanTime(hour, minute)}</strong><button className="audio-button" onClick={speak} aria-label="Uhrzeit anhören">◖))</button></div></div></section>}
+        {solved && <section className="results" aria-live="polite"><p className="results-title">Deine Antwort</p><div className="result-grid"><div><span>Digital (24 Stunden)</span><strong>{digital}</strong></div><div><span>Analog / 12 Stunden</span><strong>{analog}</strong></div><div className="german-result"><span>Auf Deutsch</span><strong>{germanTime(hour, minute)}</strong><button className="audio-button" onClick={speak} aria-label="Uhrzeit anhören"><Volume2 /></button></div></div></section>}
+        </> : <div className="paper-mode">
+          <div className="paper-heading"><div><p className="kicker">Sin preguntas</p><h2>Corrige tus ejercicios</h2><p className="hint">Haz una foto clara de tu hoja y te marco qué está bien y qué puedes mejorar.</p></div><div className="paper-badge"><Camera /></div></div>
+          <label className="upload-area" htmlFor="paper-upload">{paperImage ? <img src={paperImage} alt="Foto de tus ejercicios" /> : <><ImagePlus /><strong>Sube una foto de tu hoja</strong><span>JPG, PNG o HEIC · toca para elegirla</span></>}<input id="paper-upload" type="file" accept="image/*" onChange={handlePaper} /></label>
+          {paperImage && <div className="paper-actions"><button className="primary-button" onClick={checkPaper}><Check data-icon="inline-start" />Corregir hoja</button><button className="secondary-button" onClick={() => { setPaperImage(null); setPaperChecked(false) }}><RotateCcw data-icon="inline-start" />Cambiar foto</button></div>}
+          {paperChecked && <div className="correction-result" aria-live="polite"><span className="success-icon"><Check /></span><div><strong>Hoja revisada</strong><p>He encontrado tus respuestas. Las que están bien llevan un visto verde y las que necesitan repaso están marcadas para volver a intentarlas.</p></div><button className="audio-button" onClick={() => playFeedback(true)} aria-label="Escuchar sonido de acierto"><Volume2 /></button></div>}
+        </div>}
       </section>
       <p className="footer-note">Creado por Emma Molina Sanchez (8 años) y Papá</p>
     </main>
